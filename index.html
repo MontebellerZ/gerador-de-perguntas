@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>gerador de formula</title>
+
+        <style type="text/css">
+            html,
+            body {
+                margin: 0px;
+                padding: 0px;
+            }
+
+            body {
+                height: 100vh;
+                box-sizing: border-box;
+                background-color: rgb(200, 200, 200);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: 8px;
+            }
+
+            h1 {
+                text-align: center;
+                margin: 0px;
+            }
+
+            #areaParametros,
+            #areaResultado {
+                flex: 2;
+                display: flex;
+                border: 1px solid black;
+                border-radius: 5px;
+                padding: 10px;
+                background-color: rgb(240, 240, 240);
+                min-height: min-content;
+                overflow: auto;
+                margin: 16px;
+            }
+
+            #areaResultado {
+                flex: 1;
+            }
+
+            #areaParametros form h3 {
+                margin: 0px 0px 4px;
+            }
+
+            #areaParametros form {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                margin: 10px;
+            }
+
+            #areaParametros form input,
+            #areaParametros form select,
+            #areaParametros form textarea {
+                margin: 5px 0px;
+                padding: 8px;
+                font-size: 16px;
+                outline: 0px;
+                border: 1px solid black;
+                border-radius: 3px;
+                box-sizing: border-box;
+            }
+
+            #areaParametros .textareaDiv {
+                display: flex;
+                flex: 1;
+            }
+
+            #areaParametros form textarea {
+                flex: 1;
+                min-width: min-content;
+                resize: horizontal;
+            }
+
+            #areaParametros form input[type="submit"] {
+                background-color: gray;
+                color: white;
+                cursor: pointer;
+                margin-bottom: 0px;
+            }
+
+            #areaParametros form p {
+                margin: 3px;
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 14px;
+            }
+
+            #areaParametros form p:nth-child(2n) {
+                color: red;
+            }
+
+            #parametrosLista {
+                flex: 2;
+                margin: 10px;
+                border: 1px solid black;
+                border-radius: 5px;
+                overflow: auto;
+            }
+
+            #parametrosLista h3,
+            #parametrosLista ul li {
+                display: flex;
+                justify-content: flex-start;
+                align-items: center;
+                word-wrap: break-word;
+            }
+
+            #parametrosLista h3 {
+                margin: 4px 8px;
+            }
+
+            #parametrosLista ul {
+                margin: 0px 8px;
+                border-left: 1px solid black;
+                padding: 0px;
+            }
+
+            #parametrosLista ul li {
+                margin: 4px 0px;
+            }
+
+            #parametrosLista .removerBtn {
+                color: black;
+                background-color: rgba(255, 0, 0, 0.3);
+                border: 1px solid black;
+                outline: 0px;
+                cursor: pointer;
+                margin: 0px;
+                margin-left: 10px;
+                align-self: stretch;
+            }
+
+            #mostrarResultados {
+                flex: 1;
+                overflow: auto;
+                margin: 0px;
+            }
+
+            .textFragment {
+                margin: 0;
+                padding: 0;
+                flex: 1;
+
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                -ms-word-break: break-all;
+                word-break: break-word;
+                -ms-hyphens: auto;
+                -moz-hyphens: auto;
+                -webkit-hyphens: auto;
+                hyphens: auto;
+                max-width: max-content;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Parâmetros</h1>
+        <div id="areaParametros">
+            <form id="inputsParametros" onsubmit="adicionarParametro(event)">
+                <h3>Adicionar Parâmetro</h3>
+                <input
+                    type="text"
+                    id="nomeParametro"
+                    placeholder="nome do parâmetro"
+                />
+                <input type="submit" value="adicionar parâmetro" />
+            </form>
+
+            <form id="inputsOpcoes" onsubmit="adicionarOpcao(event)">
+                <h3>Adicionar Opção</h3>
+
+                <select id="selectParametro"></select>
+
+                <input
+                    type="text"
+                    id="opcaoParametro"
+                    placeholder="opção do parâmetro"
+                />
+
+                <input type="submit" value="adicionar parâmetro" />
+            </form>
+
+            <form id="inputsFormula" onsubmit="calcular(event)">
+                <h3>Calcular Fórmula</h3>
+
+                <div class="textareaDiv">
+                    <textarea id="formula" placeholder="fórmula"></textarea>
+                </div>
+
+                <p>Declare cada variável no formato:</p>
+                <p>${nome da variavel}</p>
+
+                <input type="submit" value="calcular" />
+            </form>
+
+            <div id="parametrosLista"></div>
+        </div>
+
+        <h1>Resultados</h1>
+        <div id="areaResultado">
+            <ol id="mostrarResultados"></ol>
+        </div>
+
+        <script type="text/javascript">
+            let parametros = [];
+
+            function atualizarListaParametros() {
+                document.getElementById("parametrosLista").innerHTML =
+                    parametros
+                        .map((p, pIndex) => {
+                            return `
+                                <div>
+                                    <h3>
+                                        <p class="textFragment">
+                                            ${p.nome}
+                                        </p>
+                                        <button 
+                                            class="removerBtn"
+                                            onclick="removerParametro(${pIndex})">
+                                            X
+                                        </button>
+                                    </h3>
+                                    <ul>
+                                        ${p.opcoes
+                                            .map((op, oIndex) => {
+                                                return `
+                                                    <li>
+                                                        🔹
+                                                        <p class="textFragment">
+                                                            ${op}
+                                                        </p>
+                                                        <button 
+                                                            class="removerBtn"
+                                                            onclick="removerOpcao(${pIndex}, ${oIndex})">
+                                                            X
+                                                        </button>
+                                                    </li>
+                                                `;
+                                            })
+                                            .join("")}
+                                    </ul>
+                                </div>
+                            `;
+                        })
+                        .join("\n");
+            }
+
+            function atualizarSelectParametros() {
+                document.getElementById("selectParametro").innerHTML =
+                    parametros
+                        .map((p, index) => {
+                            return `<option value="${index}">${p.nome}</option>`;
+                        })
+                        .join("");
+            }
+
+            function removerParametro(index) {
+                parametros.splice(index, 1);
+                atualizarListaParametros();
+                atualizarSelectParametros();
+            }
+
+            function removerOpcao(pIndex, oIndex) {
+                parametros[pIndex].opcoes.splice(oIndex, 1);
+                atualizarListaParametros();
+            }
+
+            function adicionarParametro(event) {
+                event.preventDefault();
+
+                let divNomeParametro =
+                    document.getElementById("nomeParametro").value;
+
+                parametros.push({
+                    nome: divNomeParametro,
+                    opcoes: [],
+                });
+
+                atualizarListaParametros();
+                atualizarSelectParametros();
+
+                let divFormula = document.getElementById("formula");
+
+                divFormula.value +=
+                    divFormula.value.length > 0
+                        ? ` + \${${divNomeParametro}}`
+                        : `\${${divNomeParametro}}`;
+
+                document.getElementById("nomeParametro").value = "";
+            }
+
+            function adicionarOpcao(event) {
+                event.preventDefault();
+
+                let divSelectValue =
+                    document.getElementById("selectParametro").value;
+                let divOpcaoParametro =
+                    document.getElementById("opcaoParametro").value;
+
+                parametros[divSelectValue].opcoes.push(divOpcaoParametro);
+
+                atualizarListaParametros();
+                document.getElementById("opcaoParametro").value = "";
+            }
+
+            function calcular(event) {
+                event.preventDefault();
+
+                let divFormulaValue = document.getElementById("formula").value;
+
+                let possibilidadesCount = 0;
+
+                let parametrosAtivo = [];
+                for (let p of parametros) {
+                    if (divFormulaValue.includes(`\${${p.nome}}`)) {
+                        parametrosAtivo.push(p);
+
+                        possibilidadesCount =
+                            possibilidadesCount === 0
+                                ? p.opcoes.length
+                                : possibilidadesCount * p.opcoes.length;
+                    }
+                }
+
+                let possibilidades = new Array(possibilidadesCount).fill(
+                    divFormulaValue
+                );
+
+                for (let i = 0; i < possibilidades.length; i++) {
+                    let pt = possibilidades.length;
+
+                    for (let j = 0; j < parametrosAtivo.length; j++) {
+                        while (
+                            possibilidades[i].includes(
+                                `\${${parametrosAtivo[j].nome}}`
+                            )
+                        ) {
+                            possibilidades[i] = possibilidades[i].replace(
+                                `\${${parametrosAtivo[j].nome}}`,
+                                parametrosAtivo[j].opcoes[
+                                    Math.floor(
+                                        (i % pt) /
+                                            (pt /
+                                                parametrosAtivo[j].opcoes
+                                                    .length)
+                                    )
+                                ]
+                            );
+                        }
+                        pt /= parametrosAtivo[j].opcoes.length;
+                    }
+                }
+
+                document.getElementById("mostrarResultados").innerHTML =
+                    possibilidades
+                        .map((p) => {
+                            return `<li>${p}</li>`;
+                        })
+                        .join("");
+
+                console.log(possibilidades.join("\n"));
+            }
+
+            // function calcular(event) {
+            //     event.preventDefault();
+
+            //     parametros = [
+            //         {
+            //             nome: "p1",
+            //             opcoes: ["1", "2", "3"],
+            //         },
+            //         {
+            //             nome: "p2",
+            //             opcoes: ["1", "2"],
+            //         },
+            //         {
+            //             nome: "p3",
+            //             opcoes: ["1", "2", "3", "4"],
+            //         },
+            //         {
+            //             nome: "p4",
+            //             opcoes: ["1", "2", "3", "4"],
+            //         },
+            //     ];
+
+            //     document.getElementById("formula").value =
+            //         "${p1} + ${p2} + ${p3} + ${p4}";
+
+            //     atualizarSelectParametros();
+            //     atualizarListaParametros();
+
+            //     setTimeout(() => {
+            //         calcular2(event);
+            //     }, 200);
+            // }
+        </script>
+    </body>
+</html>
